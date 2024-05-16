@@ -142,7 +142,7 @@ class GUI(tk.Tk):
         back_button = tk.Button(self.current_frame, image=self.back_icon, command=self.show_main_menu)
         back_button.pack()
 
-        ct_button = tk.Button(self.current_frame, text="CT", command=lambda: self.run_script("PEX_v01.py"))
+        ct_button = tk.Button(self.current_frame, text="CT", command=lambda: self.run_script("CT.py"))
         ct_button.pack(side="left", padx=10, pady=(120, 0))  # 设置按钮距离上边界的垂直间距为10，水平间距为10
 
         via_button = tk.Button(self.current_frame, text="VIA", command=lambda: self.run_script("VIA.py"))
@@ -167,7 +167,7 @@ class GUI(tk.Tk):
         back_button = tk.Button(self.current_frame, image=self.back_icon, command=self.show_main_menu)
         back_button.pack()
 
-        pex_button = tk.Button(self.current_frame, text="PEX", command=lambda: self.run_script("pex.py"))
+        pex_button = tk.Button(self.current_frame, text="PEX", command=lambda: self.run_script("PEX.py"))
         pex_button.pack(side="left", padx=10, pady=(120, 0))  # 设置按钮距离上边界的垂直间距为10，水平间距为10
 
         lu_button = tk.Button(self.current_frame, text="Latch Up", command=lambda: self.run_script("lu.py"))
