@@ -158,14 +158,6 @@ file_name = 'expanded_layer_combinations_full_factorial.xlsx'
 
 # 定义有效的 W 和 S 组合
 valid_three_layers_mt_combinations = [
-    ('0.42', '0.42'),
-    ('0.42', '0.84'),
-    ('0.42', '1.26'),
-    ('0.84', '0.42'),
-    ('1.26', '0.42'),
-    ('10', '0.5')
-]
-valid_three_layers_mt_combinations2 = [
     (MT_W, MT_S),
     (MT_W, MT_S_2x),
     (MT_W, MT_S_3x),
@@ -174,15 +166,7 @@ valid_three_layers_mt_combinations2 = [
     (Max_W, Max2_S)
 ]
 
-# valid_three_layers_m5_combinations = [
-#     ('0.2', '0.2'),
-#     ('0.2', '0.4'),
-#     ('0.2', '0.6'),
-#     ('0.4', '0.2'),
-#     ('0.6', '0.25'),
-#     ('10', '0.5')
-# ]
-valid_three_layers_m5_combinations2 = [
+valid_three_layers_m5_combinations = [
     (Mn_W, Mn_S),
     (Mn_W, Mn_S_2x),
     (Mn_W, Mn_S_3x),
@@ -191,15 +175,7 @@ valid_three_layers_m5_combinations2 = [
     (Max_W, Max2_S)
 ]
 
-# valid_three_layers_m4_m3_m2_combinations = [
-#     ('0.2', '0.2'),
-#     ('0.2', '0.4'),
-#     ('0.2', '0.6'),
-#     ('0.4', '0.2'),
-#     ('0.6', '0.25'),
-#     ('10', '0.5')
-# ]
-valid_three_layers_m4_m3_m2_combinations2 = [
+valid_three_layers_m4_m3_m2_combinations = [
     (Mn_W, Mn_S),
     (Mn_W, Mn_S_2x),
     (Mn_W, Mn_S_3x),
@@ -208,7 +184,134 @@ valid_three_layers_m4_m3_m2_combinations2 = [
     (Max_W, Max2_S)
 ]
 
+valid_three_layers_m1_combinations = [
+    (M1_W, Poly_S),
+    (M1_W, Poly_S_2x),
+    (M1_W, Poly_S_3x),
+    (M1_W_2x, Poly_S),
+    (M1_W_3x, Mn_S),
+    (Max_W, Max2_S)
+]
+
+valid_two_layers_mt_combinations = [
+    (MT_W, MT_S),
+    (MT_W, MT_S_2x),
+    (MT_W, MT_S_3x),
+    (MT_W_2x, MT_S),
+    (MT_W_3x, MT_S),
+    (Max_W, Max2_S)
+]
 
 
-print(valid_three_layers_mt_combinations)
-print(valid_three_layers_mt_combinations2)
+valid_two_layers_m4_m3_m2_combinations = [
+    (Mn_W, Mn_S),
+    (Mn_W, Mn_S_2x),
+    (Mn_W, Mn_S_3x),
+    (Mn_W_2x, Mn_S),
+    (Mn_W_3x, Max1_S),
+    (Max_W, Max2_S)
+]
+
+valid_two_layers_m1_combinations = [
+    (M1_W, M1_S),
+    (M1_W, M1_S_2x),
+    (M1_W, M1_S_3x),
+    (M1_W_2x, M1_S),
+    (M1_W_3x, Mn_S),
+    (Max_W, Max2_S)
+]
+
+valid_two_layers_poly_combinations = [
+    (Poly_W, Poly_S),
+    (Poly_W, Poly_S_2x),
+    (Poly_W, Poly_S_3x),
+    (Poly_W_2x, Poly_S),
+    (Poly_W_3x, Poly_S),
+    (Max_W, Poly_S)
+]
+
+# 删除不满足条件的行
+filtered_df = expanded_df[
+    ~(
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'] == 'MT') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_mt_combinations)))
+        |
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'] == 'M5') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_m5_combinations)))
+        |
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'].isin(['M4', 'M3', 'M2'])) &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_m4_m3_m2_combinations)))
+        |
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'] == 'M1') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_m1_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'] == 'MT') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_mt_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'].isin(['M4', 'M3', 'M2'])) &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_m4_m3_m2_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'] == 'M1') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_m1_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'] == 'N+Poly') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_poly_combinations)))
+    )
+]
+
+filtered_df.reset_index(drop=True, inplace=True)
+filtered_df.insert(0, 'NO.', range(1, len(filtered_df) + 1))
+
+# 保存筛选后的DataFrame到Excel文件
+filtered_df.to_excel(file_name, index=False)
+
+# 加载 Excel 文件
+wb = load_workbook(file_name)
+
+# 选择第一个工作表
+ws = wb.active
+
+# 设置字体和对齐方式
+font = Font(name='Times New Roman')
+alignment = Alignment(horizontal='center', vertical='center')
+
+# 设置首行字体加粗
+for cell in ws[1]:
+    cell.font = Font(name='Times New Roman', bold=True)
+
+# 遍历所有单元格，设置字体、对齐方式和行高
+for row in ws.iter_rows(min_row=2, min_col=1, max_col=ws.max_column):
+    for cell in row:
+        cell.font = font
+        cell.alignment = alignment
+    # 设置行高为 20
+    ws.row_dimensions[row[0].row].height = 20
+
+# 自动调整列宽以适应内容
+for col in ws.columns:
+    max_length = 0
+    column = col[0].column_letter  # 获取列名
+    for cell in col:
+        try:
+            if len(str(cell.value)) > max_length:
+                max_length = len(cell.value)
+        except:
+            pass
+    adjusted_width = (max_length + 2) * 1.2
+    ws.column_dimensions[column].width = adjusted_width
+
+# 保存格式化后的Excel文件
+wb.save(file_name)
+
+# 打开生成的Excel文件
+os.startfile(file_name)
+
+print(f"Excel文件已生成，并已保存为 '{file_name}'，并自动打开。")

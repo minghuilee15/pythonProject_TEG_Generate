@@ -1,273 +1,281 @@
-import tkinter as tk
-from tkinter import ttk
 import pandas as pd
-from itertools import product
-from openpyxl import Workbook
-from openpyxl.styles import Font, Alignment, Border, Side
-from ttkbootstrap import Style
 import os
+from openpyxl import load_workbook
+from openpyxl.styles import Font, Alignment
 
-def generate_design():
-    # 从界面获取用户输入的变量及其水平
+# 定义因素和水平
+factors = {
+    'Type': ['Two layers','Three layers' ],
+    'Bot-Layer': ['NW STI', 'N+AA', 'N+Poly on AA', 'N+Poly on STI', 'M1', 'M2', 'M4', 'M5'],
+    'Mid-Layer': ['M1', 'M2', 'M3', 'M4', 'M5', 'N+Poly'],
+    'Top-Layer': ['M1', 'M2', 'M3', 'M4', 'M5', 'MT']
+}
 
+# 生成两层和两层的数据
+two_layers_data = [
+    ['Two layers', 'NW STI', 'M1', '/'],
+    ['Two layers', 'NW STI', 'N+Poly', '/'],
+    ['Two layers', 'N+AA', 'M1', '/'],
+    ['Two layers', 'N+Poly on AA', 'M1', '/'],
+    ['Two layers', 'N+Poly on STI', 'M1', '/'],
+    ['Two layers', 'M1', 'M2', '/'],
+    ['Two layers', 'M1', 'M3', '/'],
+    ['Two layers', 'M2', 'M3', '/'],
+    ['Two layers', 'M2', 'M4', '/'],
+    ['Two layers', 'M5', 'MT', '/']
+]
 
-    variables = {}
-    for label, combobox in zip(variables_labels, variables_comboboxes):
-        levels = combobox.get().split(',')
-        variables[label] = [level.strip() for level in levels]
-
-    # 添加标题项到组合列表中
-    all_combinations = [list(variables.keys())]
-    all_combinations.extend(list(product(*variables.values())))
-
-    # 将组合转换为DataFrame
-    design_df = pd.DataFrame(all_combinations[1:], columns=all_combinations[0])
-
-    # 在第一列后增加两列Module和Lable
-    design_df.insert(0, 'Module', '')
-    design_df.insert(1, 'Label', '')
-
-    # 在最后一列后面增加5列Sens1，Force，COM，Sens2，Description
-    design_df['NF'] = ''
-    design_df['L'] = ''
-    design_df['Row(Y)'] = ''
-    design_df['Col(X)'] = ''
-    design_df['Mid1'] = ''
-    design_df['Bottom'] = ''
-    design_df['Top'] = ''
-    design_df['Mid2'] = ''
-
-    # #定义Typical_CT尺寸
-    # Typical_CT_Size = '0.16'
-    #
-    # #拉偏CT_Size时候，控制Enclosure1_Size大小不变
-    # Enclosure1_Size = '0.06'
-    #
-    # # 拉偏CT_Size时候，控制Enclosure2_Size大小不变
-    # Enclosure2_Size_4T_Chain = '0'
-    # Enclosure2_Size_4T_Chain_End = '0.05'
-    #
-    # 设定Mid-Layer为Poly时，W的尺寸
-    Poly_W1 = '0.13'
-    Poly_W2 = '0.26'
-    Poly_W3 = '0.39'
-    Poly_W4 = '6'
-    Poly_W5 = '100'
-
-    # 设定Mid-Layer为Poly时，S的尺寸
-    Poly_S1 = '0.18'
-    Poly_S2 = '0.36'
-    Poly_S3 = '0.54'
-    Poly_S4 = '0.6'
-    Poly_S5 = '5'
-
-    # 设定Mid-Layer为Poly时，W的尺寸
-    M1_W1 = '0.16'
-    M1_W2 = '0.32'
-    M1_W3 = '0.48'
-    M1_W4 = '6'
-    M1_W5 = '100'
-
-    # 设定Mid-Layer为Poly时，S的尺寸
-    M1_S1 = '0.17'
-    M1_S2 = '0.34'
-    M1_S3 = '0.51'
-    M1_S4 = '0.6'
-    M1_S5 = '5'
-
-    #
-    # # 拉偏M1 enc CT时候，控制Enclosure1_Size为0.06，Enclosure2_Size为-0.01(4T,Chain)，0和0.03(4T_End,Chain_End)
-    # M1_E1_1 = '0.06'
-    # M1_E2_1 = '-0.01' #4T,Chain
-    # M1_E2_2 = '0'  #4T_End,Chain_End
-    # M1_E2_3 = '0.03'  #4T_End,Chain_End
-    #
-    # # 拉偏Poly enc CT时候，控制Enclosure1_Size为0和0.03，Enclosure2_Size为0(4T,Chain)和0.05(4T_End,Chain_End)
-    # Poly_E1_1 = '0'
-    # Poly_E1_2 = '0.03'
-    # Poly_E2_1 = '0'#4T,Chain
-    # Poly_E2_2 = '0.05'  #4T_End,Chain_End
-    #
-    # 删除不满足条件的行
-    design_df = design_df[
-        ~(
-                # Two_Layers时，Top-Layer为/
-                ((design_df['Type'] == 'Two_Layers') & (design_df['Top-Layer'] != '/')) |
-                # Three_Layers时，Top-Layer不为/
-                ((design_df['Type'] == 'Three_Layers') & (design_df['Top-Layer'] == '/')) |
-
-                #Mid-Layer为N+Poly时，W取Poly的最小宽度及其整数倍
-                (
-                        (design_df['Type'] == 'Two_Layers') &
-                        (design_df['Mid-Layer'] == 'N+Poly') &
-                        (
-                                (~design_df['W'].isin([Poly_W1, Poly_W2, Poly_W3, Poly_W4, Poly_W5])) |
-                                (~design_df['S'].isin([Poly_S1, Poly_S2, Poly_S3, Poly_S4, Poly_S5]))
-                        )
-                )
-                |
-                # Mid-Layer为N+Poly时，W取Poly的最小宽度及其整数倍
-                (
-                        (design_df['Type'] == 'Two_Layers') &
-                        (design_df['Mid-Layer'] == 'M1') &
-                        (
-                                (~design_df['W'].isin([M1_W1, M1_W2, M1_W3, M1_W4, M1_W5])) |
-                                (~design_df['S'].isin([M1_S1, M1_S2, M1_S3, M1_S4, M1_S5]))
-                        )
-                )
-
-            # # 删除Poly因素中的AA enc CT
-                # ((design_df['Device3'] == 'Poly') & (design_df['Split'] == 'AA enc CT')) |
-                #
-                #
-                # # 定义Typical_CT_Size
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Size'] != Typical_CT_Size)) |
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Size'] != Typical_CT_Size)) |
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Size'] != Typical_CT_Size)) |
-                #
-                # # 拉偏CT_Size时候，控制Enclosure1_Size大小不变
-                # ((design_df['Split'] == 'Size') & (design_df['Enclosure1'] != Enclosure1_Size)) |
-                #
-                # # 拉偏CT_Size时候，控制Enclosure2_Size大小不变
-                # ((design_df['Type'] == '4T') & (design_df['Split'] == 'Size') & ~(design_df['Enclosure2'] == Enclosure2_Size_4T_Chain)) |
-                # ((design_df['Type'] == '4T-End') & (design_df['Split'] == 'Size') & ~(design_df['Enclosure2'] == Enclosure2_Size_4T_Chain_End)) |
-                # ((design_df['Type'] == 'Chain') & (design_df['Split'] == 'Size') & ~(design_df['Enclosure2'] == Enclosure2_Size_4T_Chain)) |
-                # ((design_df['Type'] == 'Chain-End') & (design_df['Split'] == 'Size') & ~(design_df['Enclosure2'] == Enclosure2_Size_4T_Chain_End)) |
-                #
-                #
-                # # AA enc CT
-                #
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == '4T') & (~(design_df['Enclosure1'].isin([AA_E1_1, AA_E1_2])))) |
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == '4T') & (design_df['Enclosure2'] != AA_E2_1)) |
-                #
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == '4T-End') & (~(design_df['Enclosure1'].isin([AA_E1_1, AA_E1_2])))) |
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == '4T-End') & (design_df['Enclosure2'] != AA_E2_2)) |
-                #
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == 'Chain') & (~(design_df['Enclosure1'].isin([AA_E1_1, AA_E1_2])))) |
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == 'Chain') & (design_df['Enclosure2'] != AA_E2_1)) |
-                #
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == 'Chain-End') & (~(design_df['Enclosure1'].isin([AA_E1_1, AA_E1_2])))) |
-                # ((design_df['Split'] == 'AA enc CT') & (design_df['Type'] == 'Chain-End') & (design_df['Enclosure2'] != AA_E2_2)) |
-                #
-                # # M1 enc CT
-                #
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == '4T') & (design_df['Enclosure1'] != M1_E1_1)) |
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == '4T') & (design_df['Enclosure2'] != M1_E2_1)) |
-                #
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == '4T-End') & ~(design_df['Enclosure1'] == M1_E1_1)) |
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == '4T-End') & (~(design_df['Enclosure2'].isin([M1_E2_2, M1_E2_3])))) |
-                #
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == 'Chain') & ~(design_df['Enclosure1'] == M1_E1_1)) |
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == 'Chain') & (design_df['Enclosure2'] != M1_E2_1)) |
-                #
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == 'Chain-End') & ~(design_df['Enclosure1'] == M1_E1_1)) |
-                # ((design_df['Split'] == 'M1 enc CT') & (design_df['Type'] == 'Chain-End') & (~(design_df['Enclosure2'].isin([M1_E2_2, M1_E2_3])))) |
-                #
-                # # Poly enc CT
-                #
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == '4T') & (~(design_df['Enclosure1'].isin([Poly_E1_1, Poly_E1_2])))) |
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == '4T') & (design_df['Enclosure2'] != Poly_E2_1)) |
-                #
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == '4T-End') & (~(design_df['Enclosure1'].isin([Poly_E1_1, Poly_E1_2])))) |
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == '4T-End') & (design_df['Enclosure2'] != Poly_E2_2)) |
-                #
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == 'Chain') & (~(design_df['Enclosure1'].isin([Poly_E1_1, Poly_E1_2])))) |
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == 'Chain') & (design_df['Enclosure2'] != Poly_E2_1)) |
-                #
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == 'Chain-End') & (~(design_df['Enclosure1'].isin([Poly_E1_1, Poly_E1_2])))) |
-                # ((design_df['Split'] == 'Poly enc CT') & (design_df['Type'] == 'Chain-End') & (design_df['Enclosure2'] != Poly_E2_2))
+# 生成三层和两层的数据
+three_layers_data = [
+    ['Three layers', 'NW STI', 'M1', 'M2'],
+    ['Three layers', 'NW STI', 'N+Poly', 'M1'],
+    ['Three layers', 'N+AA', 'M1', 'M2'],
+    ['Three layers', 'N+Poly on AA', 'M1', 'M2'],
+    ['Three layers', 'N+Poly on STI', 'M1', 'M2'],
+    ['Three layers', 'M1', 'M2', 'M3'],
+    ['Three layers', 'M1', 'M2', 'M4'],
+    ['Three layers', 'M1', 'M3', 'M4'],
+    ['Three layers', 'M2', 'M3', 'M4'],
+    ['Three layers', 'M2', 'M4', 'M5'],
+    ['Three layers', 'M4', 'M5', 'MT']
+]
 
 
-        )
-    ]
+# 合并数据
+data = two_layers_data + three_layers_data
 
-    # 在 DataFrame 中插入一列序号
-    design_df.insert(0, 'NO.', range(1, len(design_df) + 1))
+# 创建DataFrame
+df = pd.DataFrame(data, columns=['Type', 'Bot-Layer', 'Mid-Layer', 'Top-Layer'])
 
-    # 保存设计到Excel文件
-    excel_file = "orthogonal_experiment_design_CT.xlsx"
+# 定义最小线宽
+Poly_W = '0.13'
+M1_W = '0.16'
+Mn_W = '0.2'
+MT_W = '0.42'
+Max_W = '10'
 
-    # 创建一个新的Excel工作簿
-    wb = Workbook()
-    ws = wb.active
+# 定义最小间距
+Poly_S = '0.18'
+M1_S = '0.17'
+Mn_S = '0.2'
+MT_S = '0.42'
+Max1_S = '0.25'
+Max2_S = '0.5'
 
-    # 添加标题行并设置边框
-    for c_idx, title in enumerate(design_df.columns, 1):
-        cell = ws.cell(row=1, column=c_idx, value=title)
-        cell.font = Font(name='Times New Roman', bold=True)
-        cell.alignment = Alignment(horizontal='center', vertical='center')
-        cell.border = Border(bottom=Side(style='medium'))
-
-    # 将DataFrame写入工作表
-    for r_idx, r in enumerate(design_df.values.tolist(), 2):
-        for c_idx, value in enumerate(r, 1):
-            cell = ws.cell(row=r_idx, column=c_idx, value=value)
-            cell.alignment = Alignment(horizontal='center', vertical='center')
-            cell.font = Font(name='Times New Roman')
-
-    # 设置字体和自动调整列宽
-    for col in ws.columns:
-        max_length = 0
-        column = col[0].column_letter
-        for cell in col:
-            try:
-                if len(str(cell.value)) > max_length:
-                    max_length = len(cell.value)
-            except:
-                pass
-        adjusted_width = (max_length + 2) * 1.2
-        ws.column_dimensions[column].width = adjusted_width
-
-    # 设置行高
-    for row in ws.iter_rows(min_row=1, max_row=ws.max_row):
-        for cell in row:
-            ws.row_dimensions[cell.row].height = 25
-
-    # 保存Excel文件
-    wb.save(excel_file)
-    print(f"正交实验设计已保存到 {excel_file}")
-
-    # 自动打开Excel文件
-    os.system(f'start excel {excel_file}')
-
-# 创建主窗口
-root = tk.Tk()
-root.title("orthogonal_experiment_design")
-
-# 设置主题
-style = Style(theme='flatly')
-
-# 设置字体
-style.configure('TLabel', font=('Times New Roman', 12, 'bold'))
-style.configure('TButton', font=('Microsoft YaHei', 12))
-
-# 添加标签和输入框
-variables_frame = ttk.LabelFrame(root, text="实验变量及水平")
-variables_frame.grid(row=0, column=0, padx=200, pady=50, sticky="nsew")
-root.grid_rowconfigure(0, weight=1)
-root.grid_columnconfigure(0, weight=1)
-
-variables_labels = ['Type', 'Bot-Layer', 'Mid-Layer', 'Top-Layer', 'W', 'S']
-variables_comboboxes = []
-
-# 设置每个部件的行和列权重
-for i in range(len(variables_labels)):
-    variables_frame.grid_columnconfigure(i * 2, weight=100)
-    variables_frame.grid_columnconfigure(i * 2 + 1, weight=100)
-
-for idx, label in enumerate(variables_labels):
-    ttk.Label(variables_frame, text=label + ":").grid(row=idx, column=0, padx=5, pady=2)
-    # 使用ttkbootstrap内置的输入框样式，并设置线宽
-    combobox = ttk.Entry(variables_frame, style='secondary.TEntry', width=40)
-    combobox.grid(row=idx, column=1, padx=5, pady=2)
-    style.configure('secondary.TEntry', borderwidth=20)  # 设置输入框的线宽为2像素
-    variables_comboboxes.append(combobox)
-
-# 添加生成按钮
-generate_button = ttk.Button(root, text="生成TEG表单", command=generate_design)
-generate_button.grid(row=1, column=0, pady=10)
-
-root.mainloop()
+# 定义 W 和 S 的水平
+W_levels = [Poly_W, M1_W, Mn_W, MT_W, Max_W]
+S_levels = [Poly_S, M1_S, Mn_S, MT_S, Max1_S, Max2_S]
 
 
+# 遍历W_levels列表中的前四个数值
+for start_value in W_levels[:4]:  # 只取前四个元素
+    start_value = float(start_value)  # 将字符串转换为浮点数
 
+    # 计算新值
+    current_value_2x = round(start_value * 2, 2)  # 计算2倍数递增的值并四舍五入到两位小数
+    current_value_3x = round(start_value * 3, 2)  # 计算3倍数递增的值并四舍五入到两位小数
+
+    # 插入新值到当前元素后面插入新值
+    index = W_levels.index(str(start_value)) + 1
+    W_levels.insert(index, str(current_value_2x))  # 将新值2x插入到指定位置
+    W_levels.insert(index + 1, str(current_value_3x))  # 将新值3x插入到指定位置
+
+# 遍历S_levels列表中的前四个数值
+for start_value in S_levels[:4]:  # 只取前四个元素
+    start_value = float(start_value)  # 将字符串转换为浮点数
+
+    # 计算新值
+    current_value_2x = round(start_value * 2, 2)  # 计算2倍数递增的值并四舍五入到两位小数
+    current_value_3x = round(start_value * 3, 2)  # 计算3倍数递增的值并四舍五入到两位小数
+
+    # 插入新值到当前元素后面插入新值
+    index = S_levels.index(str(start_value)) + 1
+    S_levels.insert(index, str(current_value_2x))  # 将新值2x插入到指定位置
+    S_levels.insert(index + 1, str(current_value_3x))  # 将新值3x插入到指定位置
+
+
+# 生成所有可能的组合
+expanded_data = []
+for row in data:
+    for w_level in W_levels:
+        for s_level in S_levels:
+            expanded_data.append(row + [w_level, s_level])
+
+# 创建扩展后的DataFrame
+expanded_df = pd.DataFrame(expanded_data, columns=['Type', 'Bot-Layer', 'Mid-Layer', 'Top-Layer', 'W', 'S'])
+
+# 在第一列后增加两列Module和Label
+expanded_df.insert(0, 'Module', '')
+expanded_df.insert(1, 'Label', '')
+
+# 在最后一列后面增加5列
+expanded_df['NF'] = ''
+expanded_df['L'] = ''
+expanded_df['Row(Y)'] = ''
+expanded_df['Col(X)'] = ''
+expanded_df['Mid1'] = ''
+expanded_df['Bottom'] = ''
+expanded_df['Top'] = ''
+expanded_df['Mid2'] = ''
+
+# 定义文件名
+file_name = 'expanded_layer_combinations_full_factorial.xlsx'
+
+# 定义有效的 W 和 S 组合
+valid_three_layers_mt_combinations = [
+    ('0.42', '0.42'),
+    ('0.42', '0.84'),
+    ('0.42', '1.26'),
+    ('0.84', '0.42'),
+    ('1.26', '0.42'),
+    ('10', '0.5')
+]
+
+valid_three_layers_m5_combinations = [
+    ('0.2', '0.2'),
+    ('0.2', '0.4'),
+    ('0.2', '0.6'),
+    ('0.4', '0.2'),
+    ('0.6', '0.25'),
+    ('10', '0.5')
+]
+
+valid_three_layers_m4_m3_m2_combinations = [
+    ('0.2', '0.2'),
+    ('0.2', '0.4'),
+    ('0.2', '0.6'),
+    ('0.4', '0.2'),
+    ('0.6', '0.25'),
+    ('10', '0.5')
+]
+
+valid_three_layers_m1_combinations = [
+    ('0.16', '0.18'),
+    ('0.16', '0.36'),
+    ('0.16', '0.54'),
+    ('0.32', '0.18'),
+    ('0.48', '0.2'),
+    ('10', '0.5')
+]
+
+valid_two_layers_mt_combinations = [
+    ('0.42', '0.42'),
+    ('0.42', '0.84'),
+    ('0.42', '1.26'),
+    ('0.84', '0.42'),
+    ('1.26', '0.42'),
+    ('10', '0.5')
+]
+
+valid_two_layers_m4_m3_m2_combinations = [
+    ('0.2', '0.2'),
+    ('0.2', '0.4'),
+    ('0.2', '0.6'),
+    ('0.4', '0.2'),
+    ('0.6', '0.25'),
+    ('10', '0.5')
+]
+
+valid_two_layers_m1_combinations = [
+    ('0.16', '0.17'),
+    ('0.16', '0.34'),
+    ('0.16', '0.51'),
+    ('0.32', '0.17'),
+    ('0.48', '0.2'),
+    ('10', '0.5')
+]
+
+valid_two_layers_poly_combinations = [
+    ('0.13', '0.18'),
+    ('0.13', '0.36'),
+    ('0.13', '0.54'),
+    ('0.26', '0.18'),
+    ('0.39', '0.18'),
+    ('10', '0.18')
+]
+
+# 删除不满足条件的行
+filtered_df = expanded_df[
+    ~(
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'] == 'MT') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_mt_combinations)))
+        |
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'] == 'M5') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_m5_combinations)))
+        |
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'].isin(['M4', 'M3', 'M2'])) &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_m4_m3_m2_combinations)))
+        |
+        ((expanded_df['Type'] == 'Three layers') &
+         (expanded_df['Top-Layer'] == 'M1') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_three_layers_m1_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'] == 'MT') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_mt_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'].isin(['M4', 'M3', 'M2'])) &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_m4_m3_m2_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'] == 'M1') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_m1_combinations)))
+        |
+        ((expanded_df['Type'] == 'Two layers') &
+         (expanded_df['Mid-Layer'] == 'N+Poly') &
+         (~expanded_df[['W', 'S']].apply(tuple, axis=1).isin(valid_two_layers_poly_combinations)))
+    )
+]
+
+filtered_df.reset_index(drop=True, inplace=True)
+filtered_df.insert(0, 'NO.', range(1, len(filtered_df) + 1))
+
+# 保存筛选后的DataFrame到Excel文件
+filtered_df.to_excel(file_name, index=False)
+
+# 加载 Excel 文件
+wb = load_workbook(file_name)
+
+# 选择第一个工作表
+ws = wb.active
+
+# 设置字体和对齐方式
+font = Font(name='Times New Roman')
+alignment = Alignment(horizontal='center', vertical='center')
+
+# 设置首行字体加粗
+for cell in ws[1]:
+    cell.font = Font(name='Times New Roman', bold=True)
+
+# 遍历所有单元格，设置字体、对齐方式和行高
+for row in ws.iter_rows(min_row=2, min_col=1, max_col=ws.max_column):
+    for cell in row:
+        cell.font = font
+        cell.alignment = alignment
+    # 设置行高为 20
+    ws.row_dimensions[row[0].row].height = 20
+
+# 自动调整列宽以适应内容
+for col in ws.columns:
+    max_length = 0
+    column = col[0].column_letter  # 获取列名
+    for cell in col:
+        try:
+            if len(str(cell.value)) > max_length:
+                max_length = len(cell.value)
+        except:
+            pass
+    adjusted_width = (max_length + 2) * 1.2
+    ws.column_dimensions[column].width = adjusted_width
+
+# 保存格式化后的Excel文件
+wb.save(file_name)
+
+# 打开生成的Excel文件
+os.startfile(file_name)
+
+print(f"Excel文件已生成，并已保存为 '{file_name}'，并自动打开。")
