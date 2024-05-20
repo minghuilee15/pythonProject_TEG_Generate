@@ -154,7 +154,7 @@ expanded_df['Top'] = ''
 expanded_df['Mid2'] = ''
 
 # 定义文件名
-file_name = 'expanded_layer_combinations_full_factorial.xlsx'
+file_name = 'PEX.xlsx'
 
 # 定义有效的 W 和 S 组合
 valid_three_layers_mt_combinations = [
