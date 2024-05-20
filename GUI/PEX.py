@@ -374,7 +374,7 @@ class InputDialog(QWidget):
         expanded_df['Top'] = ''
         expanded_df['Mid2'] = ''
 
-        file_name = 'expanded_layer_combinations_full_factorial.xlsx'
+        file_name = 'PEX.xlsx'
 
         valid_three_layers_mt_combinations = [
             (MT_W, MT_S), (MT_W, MT_S_2x), (MT_W, MT_S_3x), (MT_W_2x, MT_S), (MT_W_3x, MT_S), (Max_W, Max2_S)
